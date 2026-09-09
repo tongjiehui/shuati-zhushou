@@ -1,9 +1,9 @@
 // =====================
 // 统计 / 错题本 / 历史
 // =====================
-import * as store from '../storage.js?v=20260909q';
-import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260909q';
-import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260909q';
+import * as store from '../storage.js?v=20260909s';
+import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260909s';
+import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260909s';
 
 export function renderStats(hash) {
   const sub = hash.replace(/^#\/stats\/?/, '');
