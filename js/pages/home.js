@@ -1,8 +1,8 @@
 // =====================
 // 首页
 // =====================
-import * as store from '../storage.js?v=20260909p';
-import { fmtRelative, setView } from '../ui.js?v=20260909p';
+import * as store from '../storage.js?v=20260909q';
+import { fmtRelative, setView } from '../ui.js?v=20260909q';
 
 export function renderHome() {
   const data = store.getAll();
@@ -104,10 +104,10 @@ export function renderHome() {
   `);
 
   // 绑定事件
-  setView.querySelectorAll('[data-go]').forEach(el => {
+  document.querySelectorAll('[data-go]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/' + el.dataset.go);
   });
-  setView.querySelectorAll('[data-bank]').forEach(el => {
+  document.querySelectorAll('[data-bank]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/bank/' + el.dataset.bank);
   });
 }
