@@ -1,9 +1,9 @@
 // =====================
 // 统计 / 错题本 / 历史
 // =====================
-import * as store from '../storage.js?v=20260909p';
-import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260909p';
-import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260909p';
+import * as store from '../storage.js?v=20260909q';
+import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260909q';
+import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260909q';
 
 export function renderStats(hash) {
   const sub = hash.replace(/^#\/stats\/?/, '');
@@ -82,10 +82,10 @@ function renderOverview() {
     </div>
   `);
 
-  setView.querySelectorAll('[data-go]').forEach(el => {
+  document.querySelectorAll('[data-go]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/stats/' + el.dataset.go);
   });
-  setView.querySelectorAll('[data-rec]').forEach(el => {
+  document.querySelectorAll('[data-rec]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/stats/record/' + el.dataset.rec);
   });
 }
@@ -132,10 +132,10 @@ function renderWrongList() {
     </div>
   `);
   $('#reviewBtn').addEventListener('click', () => location.hash = '#/practice/wrong');
-  setView.querySelectorAll('[data-qid]').forEach(el => {
+  document.querySelectorAll('[data-qid]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/stats/wrong/' + el.dataset.qid);
   });
-  setView.querySelectorAll('[data-toggle-wrong]').forEach(el => {
+  document.querySelectorAll('[data-toggle-wrong]').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       store.toggleWrong(el.dataset.toggleWrong);
@@ -143,7 +143,7 @@ function renderWrongList() {
       renderWrongList();
     });
   });
-  setView.querySelectorAll('[data-toggle-fav]').forEach(el => {
+  document.querySelectorAll('[data-toggle-fav]').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       const r = store.toggleFavorite(el.dataset.toggleFav);
@@ -169,13 +169,13 @@ function renderFavoriteList() {
     </div>
   `);
   $('#reviewBtn').addEventListener('click', () => location.hash = '#/practice/favorite');
-  setView.querySelectorAll('[data-qid]').forEach(el => {
+  document.querySelectorAll('[data-qid]').forEach(el => {
     el.addEventListener('click', () => {
       // 进入题库详情定位题目
       location.hash = '#/bank/' + el.dataset.bank;
     });
   });
-  setView.querySelectorAll('[data-toggle-fav]').forEach(el => {
+  document.querySelectorAll('[data-toggle-fav]').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       store.toggleFavorite(el.dataset.toggleFav);
@@ -207,7 +207,7 @@ function renderRecordList() {
       `).join('')}
     </div>
   `);
-  setView.querySelectorAll('[data-rec]').forEach(el => {
+  document.querySelectorAll('[data-rec]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/stats/record/' + el.dataset.rec);
   });
 }
