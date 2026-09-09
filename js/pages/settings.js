@@ -1,8 +1,8 @@
 // =====================
 // 设置
 // =====================
-import * as store from '../storage.js?v=20260909q';
-import { $, setView, toast, confirm, downloadFile, pickFile, fmtDate } from '../ui.js?v=20260909q';
+import * as store from '../storage.js?v=20260909s';
+import { $, setView, toast, confirm, downloadFile, pickFile, fmtDate } from '../ui.js?v=20260909s';
 
 export function renderSettings() {
   const data = store.getAll();
