@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>刷题助手 · 通用题库练习</title>
+  <link rel="stylesheet" href="./css/style.css?v=20260909o" />
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部导航 -->
+    <header class="topbar">
+      <button id="backBtn" class="icon-btn hidden" aria-label="返回">‹</button>
+      <h1 id="pageTitle">刷题助手</h1>
+      <button id="settingsBtn" class="icon-btn" aria-label="设置">⚙</button>
+    </header>
+
+    <!-- 滚动提示条 -->
+    <div class="notice-bar" aria-hidden="true">
+      <div class="notice-scroll">
+        <span>童杰辉简单研发，程序功能不全后续慢慢更新，有问题与本人联系　·　童杰辉简单研发，程序功能不全后续慢慢更新，有问题与本人联系　·　童杰辉简单研发，程序功能不全后续慢慢更新，有问题与本人联系　·　</span>
+        <span>童杰辉简单研发，程序功能不全后续慢慢更新，有问题与本人联系　·　童杰辉简单研发，程序功能不全后续慢慢更新，有问题与本人联系　·　童杰辉简单研发，程序功能不全后续慢慢更新，有问题与本人联系　·　</span>
+      </div>
+    </div>
+
+    <!-- 页面内容 -->
+    <main id="view"></main>
+
+    <!-- 底部导航 -->
+    <nav class="tabbar">
+      <a class="tab" data-route="home"><span class="tab-icon">🏠</span><span>首页</span></a>
+      <a class="tab" data-route="bank"><span class="tab-icon">📚</span><span>题库</span></a>
+      <a class="tab" data-route="practice"><span class="tab-icon">✏️</span><span>练习</span></a>
+      <a class="tab" data-route="exam"><span class="tab-icon">📝</span><span>考试</span></a>
+      <a class="tab" data-route="stats"><span class="tab-icon">📊</span><span>统计</span></a>
+    </nav>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 模态框 -->
+    <div id="modal" class="modal hidden">
+      <div class="modal-mask"></div>
+      <div class="modal-body">
+        <h3 id="modalTitle"></h3>
+        <div id="modalContent"></div>
+        <div class="modal-actions">
+          <button id="modalCancel" class="btn btn-ghost">取消</button>
+          <button id="modalOk" class="btn btn-primary">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js?v=20260909o"></script>
+</body>
+</html>
