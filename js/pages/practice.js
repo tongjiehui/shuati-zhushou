@@ -1,9 +1,9 @@
 // =====================
 // 练习模式
 // =====================
-import * as store from '../storage.js?v=20260909q';
-import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260909q';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909q';
+import * as store from '../storage.js?v=20260909s';
+import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260909s';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909s';
 
 export function renderPractice(hash) {
   const sub = hash.replace(/^#\/practice\/?/, '');
@@ -269,6 +269,7 @@ function renderRun(bankId) {
       <span class="jump-label">题</span>
       <button class="btn btn-sm" id="jumpBtn">跳转</button>
       <span class="jump-total">/ 共 ${total} 题</span>
+      <button class="btn btn-sm" id="revealBtn" ${sess.results[sess.index] ? 'style="display:none;"' : ''}>👁 查看答案</button>
     </div>
   `);
 
@@ -376,6 +377,24 @@ function renderRun(bankId) {
   }
   $('#jumpBtn').addEventListener('click', doJump);
   jumpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doJump(); } });
+
+  // 查看答案(直接揭示正确答案,该题计入错题)
+  const revealBtn = $('#revealBtn');
+  if (revealBtn) {
+    revealBtn.addEventListener('click', () => {
+      if (sess.results[sess.index]) return;
+      const r = { correct: false, revealed: true };
+      sess.results[sess.index] = r;
+      if (sess.answers[sess.index] === undefined) sess.answers[sess.index] = null;
+      sessionStorage.setItem('practice-session', JSON.stringify(sess));
+
+      if (!store.isWrong(q.id)) store.toggleWrong(q.id);
+      store.tickTodayCount(1);
+
+      showFeedback(q, sess.answers[sess.index], r);
+      revealBtn.style.display = 'none';
+    });
+  }
 }
 
 function renderOptions(q, selected) {
@@ -437,12 +456,14 @@ function isEmpty(q, ans) {
 function showFeedback(q, userAnswer, result) {
   const area = $('#feedbackArea');
   const cls = result.correct ? 'correct' : (result.partial ? '' : 'wrong');
-  const label = result.correct ? '✓ 回答正确' : (result.partial ? '⚠ 部分正确' : '✗ 回答错误');
+  const label = result.correct ? '✓ 回答正确'
+    : (result.revealed ? '👁 已查看答案（本题计入错题本）'
+    : (result.partial ? '⚠ 部分正确' : '✗ 回答错误'));
   area.innerHTML = `
     <div class="feedback ${cls}">
       <div class="label">${label}</div>
       ${result.correct ? '' : `<div>正确答案: ${formatAnswer(q)}</div>`}
-      ${userAnswer !== undefined && !result.correct ? `<div>你的答案: ${formatUserAnswer(q, userAnswer)}</div>` : ''}
+      ${!result.correct && !result.revealed && userAnswer !== undefined ? `<div>你的答案: ${formatUserAnswer(q, userAnswer)}</div>` : ''}
       ${q.explanation ? `<div class="mt-2">💡 ${escapeHtml(q.explanation)}</div>` : ''}
     </div>
   `;
