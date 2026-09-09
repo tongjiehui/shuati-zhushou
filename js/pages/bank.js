@@ -1,9 +1,9 @@
 // =====================
 // 题库管理
 // =====================
-import * as store from '../storage.js?v=20260909q';
-import { $, setView, escapeHtml, toast, confirm, formModal, downloadFile, pickFile, fmtDate } from '../ui.js?v=20260909q';
-import { TYPE_LABELS, TYPE_ICONS, originalNoLabel } from '../questionTypes.js?v=20260909q';
+import * as store from '../storage.js?v=20260909s';
+import { $, setView, escapeHtml, toast, confirm, formModal, downloadFile, pickFile, fmtDate } from '../ui.js?v=20260909s';
+import { TYPE_LABELS, TYPE_ICONS, originalNoLabel } from '../questionTypes.js?v=20260909s';
 import { C3_BANKS } from '../data/c3-bank.js';
 
 export function renderBank(hash) {
