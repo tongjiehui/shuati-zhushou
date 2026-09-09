@@ -1,9 +1,9 @@
 // =====================
 // 模拟考试模式
 // =====================
-import * as store from '../storage.js?v=20260909p';
-import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260909p';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909p';
+import * as store from '../storage.js?v=20260909q';
+import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260909q';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909q';
 
 export function renderExam(hash) {
   const sub = hash.replace(/^#\/exam\/?/, '');
@@ -127,7 +127,10 @@ function renderRun(bankId) {
     </div>
 
     <div class="q-card">
-      <div class="q-type">第 ${sess.index + 1} / ${total} 题 · ${TYPE_ICONS[q.type]} ${TYPE_LABELS[q.type]}${originalNoLabel(q) ? ' · ' + originalNoLabel(q) : ''}</div>
+      <div class="q-head">
+        <div class="q-type">第 ${sess.index + 1} / ${total} 题 · ${TYPE_ICONS[q.type]} ${TYPE_LABELS[q.type]}${originalNoLabel(q) ? ' · ' + originalNoLabel(q) : ''}</div>
+        <button class="q-fav-btn ${store.isFavorite(q.id) ? 'active' : ''}" id="favBtn">${store.isFavorite(q.id) ? '⭐ 已收藏' : '☆ 收藏'}</button>
+      </div>
       <div class="q-stem" id="qStem">${escapeHtml(q.stem)}</div>
       <div id="answerArea"></div>
     </div>
@@ -204,6 +207,17 @@ function renderRun(bankId) {
   }
   // 选中态
   highlightCurrent(q, sess.answers[sess.index]);
+
+  // 收藏/取消收藏
+  const favBtn = $('#favBtn');
+  if (favBtn) {
+    favBtn.addEventListener('click', () => {
+      const on = store.toggleFavorite(q.id);
+      favBtn.textContent = on ? '⭐ 已收藏' : '☆ 收藏';
+      favBtn.classList.toggle('active', on);
+      toast(on ? '已加入收藏' : '已取消收藏', 1200);
+    });
+  }
 
   // 跳转
   $$('.answer-cell').forEach(el => {
