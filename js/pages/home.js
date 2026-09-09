@@ -1,8 +1,8 @@
 // =====================
 // 首页
 // =====================
-import * as store from '../storage.js?v=20260909o';
-import { fmtRelative, setView } from '../ui.js?v=20260909o';
+import * as store from '../storage.js?v=20260909p';
+import { fmtRelative, setView } from '../ui.js?v=20260909p';
 
 export function renderHome() {
   const data = store.getAll();
