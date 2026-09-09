@@ -1,9 +1,9 @@
 // =====================
 // 模拟考试模式
 // =====================
-import * as store from '../storage.js?v=20260909o';
-import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260909o';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909o';
+import * as store from '../storage.js?v=20260909p';
+import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260909p';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909p';
 
 export function renderExam(hash) {
   const sub = hash.replace(/^#\/exam\/?/, '');
