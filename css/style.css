@@ -521,7 +521,7 @@ label.field-label {
 .notice-scroll {
   display: inline-block;
   white-space: nowrap;
-  animation: notice-marquee 30s linear infinite;
+  animation: notice-marquee 60s linear infinite;
 }
 .notice-scroll span {
   display: inline-block;
