@@ -1,9 +1,9 @@
 // =====================
 // 题库管理
 // =====================
-import * as store from '../storage.js?v=20260909p';
-import { $, setView, escapeHtml, toast, confirm, formModal, downloadFile, pickFile, fmtDate } from '../ui.js?v=20260909p';
-import { TYPE_LABELS, TYPE_ICONS, originalNoLabel } from '../questionTypes.js?v=20260909p';
+import * as store from '../storage.js?v=20260909q';
+import { $, setView, escapeHtml, toast, confirm, formModal, downloadFile, pickFile, fmtDate } from '../ui.js?v=20260909q';
+import { TYPE_LABELS, TYPE_ICONS, originalNoLabel } from '../questionTypes.js?v=20260909q';
 import { C3_BANKS } from '../data/c3-bank.js';
 
 export function renderBank(hash) {
@@ -123,7 +123,7 @@ function renderBankList() {
     downloadFile('quiz-template.json', JSON.stringify(tpl, null, 2));
   });
 
-  setView.querySelectorAll('[data-bank]').forEach(el => {
+  document.querySelectorAll('[data-bank]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/bank/' + el.dataset.bank);
   });
 }
@@ -245,10 +245,10 @@ function renderBankDetail(bankId) {
     });
   }
 
-  setView.querySelectorAll('[data-edit-q]').forEach(el => {
+  document.querySelectorAll('[data-edit-q]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/bank/' + bankId + '/question/' + el.dataset.editQ);
   });
-  setView.querySelectorAll('[data-del-q]').forEach(el => {
+  document.querySelectorAll('[data-del-q]').forEach(el => {
     el.addEventListener('click', async () => {
       const ok = await confirm({ title: '删除题目?', message: '确定删除该题目?', danger: true, okText: '删除' });
       if (!ok) return;
