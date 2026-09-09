@@ -1,9 +1,9 @@
 // =====================
 // 练习模式
 // =====================
-import * as store from '../storage.js?v=20260909p';
-import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260909p';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909p';
+import * as store from '../storage.js?v=20260909q';
+import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260909q';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909q';
 
 export function renderPractice(hash) {
   const sub = hash.replace(/^#\/practice\/?/, '');
@@ -11,8 +11,9 @@ export function renderPractice(hash) {
 
   // 练习中
   if (mode === 'run') return renderRun(bankId);
-  if (mode === 'wrong') return renderRunWrong();
-  if (mode === 'favorite') return renderRunFavorite();
+  // 兼容两种路由: #/practice/wrong/run(mode 段) 和 #/practice/wrong(bankId 段)
+  if (mode === 'wrong' || bankId === 'wrong') return renderRunWrong();
+  if (mode === 'favorite' || bankId === 'favorite') return renderRunFavorite();
 
   // 配置
   return renderConfig(bankId);
@@ -245,7 +246,10 @@ function renderRun(bankId) {
     </div>
 
     <div class="q-card">
-      <div class="q-type">${TYPE_ICONS[q.type]} ${TYPE_LABELS[q.type]}${origLabel ? ' · ' + origLabel : ''}${q.difficulty ? ' · ' + '★'.repeat(q.difficulty) : ''}</div>
+      <div class="q-head">
+        <div class="q-type">${TYPE_ICONS[q.type]} ${TYPE_LABELS[q.type]}${origLabel ? ' · ' + origLabel : ''}${q.difficulty ? ' · ' + '★'.repeat(q.difficulty) : ''}</div>
+        <button class="q-fav-btn ${store.isFavorite(q.id) ? 'active' : ''}" id="favBtn">${store.isFavorite(q.id) ? '⭐ 已收藏' : '☆ 收藏'}</button>
+      </div>
       <div class="q-stem" id="qStem">${escapeHtml(q.stem)}</div>
       <div id="answerArea"></div>
       <div id="feedbackArea"></div>
@@ -316,6 +320,17 @@ function renderRun(bankId) {
   else if (existingAnswer !== null) {
     // 已作答但未提交 → 高亮
     highlightCurrent(q, sess.answers[sess.index]);
+  }
+
+  // 收藏/取消收藏
+  const favBtn = $('#favBtn');
+  if (favBtn) {
+    favBtn.addEventListener('click', () => {
+      const on = store.toggleFavorite(q.id);
+      favBtn.textContent = on ? '⭐ 已收藏' : '☆ 收藏';
+      favBtn.classList.toggle('active', on);
+      toast(on ? '已加入收藏' : '已取消收藏', 1200);
+    });
   }
 
   // 提交
@@ -513,7 +528,8 @@ function showSummary(sess) {
 
   sessionStorage.removeItem('practice-session');
 
+  const backHash = ['wrong', 'favorite'].includes(sess.bankId) ? '#/practice' : '#/practice/' + sess.bankId;
   $('#reviewWrongBtn').addEventListener('click', () => location.hash = '#/practice/wrong');
-  $('#restartBtn').addEventListener('click', () => location.hash = '#/practice/' + sess.bankId);
-  $('#backBtn').addEventListener('click', () => location.hash = '#/practice/' + sess.bankId);
+  $('#restartBtn').addEventListener('click', () => location.hash = backHash);
+  $('#backBtn').addEventListener('click', () => location.hash = backHash);
 }
