@@ -1,9 +1,9 @@
 // =====================
 // 统计 / 错题本 / 历史
 // =====================
-import * as store from '../storage.js?v=20260909s';
-import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260909s';
-import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260909s';
+import * as store from '../storage.js?v=20260922a';
+import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260922a';
+import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260922a';
 
 export function renderStats(hash) {
   const sub = hash.replace(/^#\/stats\/?/, '');
@@ -124,7 +124,10 @@ function renderWrongList() {
   setView(`
     <div class="row between mb-2">
       <span>${qs.length} 道错题</span>
-      <button class="btn" id="reviewBtn">📝 一键复习</button>
+      <div class="row gap-2">
+        <button class="btn" id="reviewBtn">📝 一键复习</button>
+        ${qs.length ? `<button class="btn" id="clearAllWrongBtn" style="color:var(--color-danger);">🗑 清空全部</button>` : ''}
+      </div>
     </div>
     ${qs.length === 0 ? `<div class="empty"><div class="ico">📭</div><p>暂无错题</p></div>` : ''}
     <div>
@@ -132,6 +135,16 @@ function renderWrongList() {
     </div>
   `);
   $('#reviewBtn').addEventListener('click', () => location.hash = '#/practice/wrong');
+  const clearBtn = $('#clearAllWrongBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', async () => {
+      const ok = await confirm({ title: '清空全部错题?', message: `将删除全部 ${qs.length} 道错题,此操作不可撤销`, danger: true, okText: '清空' });
+      if (!ok) return;
+      store.clearWrongAll();
+      toast('已清空错题本');
+      renderWrongList();
+    });
+  }
   document.querySelectorAll('[data-qid]').forEach(el => {
     el.addEventListener('click', () => location.hash = '#/stats/wrong/' + el.dataset.qid);
   });
@@ -161,7 +174,10 @@ function renderFavoriteList() {
   setView(`
     <div class="row between mb-2">
       <span>${qs.length} 道收藏题</span>
-      <button class="btn" id="reviewBtn">📝 一键复习</button>
+      <div class="row gap-2">
+        <button class="btn" id="reviewBtn">📝 一键复习</button>
+        ${qs.length ? `<button class="btn" id="clearAllFavBtn" style="color:var(--color-danger);">💔 全部取消收藏</button>` : ''}
+      </div>
     </div>
     ${qs.length === 0 ? `<div class="empty"><div class="ico">📭</div><p>暂无收藏</p></div>` : ''}
     <div>
@@ -169,6 +185,16 @@ function renderFavoriteList() {
     </div>
   `);
   $('#reviewBtn').addEventListener('click', () => location.hash = '#/practice/favorite');
+  const clearBtn = $('#clearAllFavBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', async () => {
+      const ok = await confirm({ title: '取消全部收藏?', message: `将取消全部 ${qs.length} 道题的收藏,此操作不可撤销`, danger: true, okText: '全部取消' });
+      if (!ok) return;
+      store.clearFavoriteAll();
+      toast('已取消全部收藏');
+      renderFavoriteList();
+    });
+  }
   document.querySelectorAll('[data-qid]').forEach(el => {
     el.addEventListener('click', () => {
       // 进入题库详情定位题目
