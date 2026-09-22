@@ -1,9 +1,9 @@
 // =====================
 // 模拟考试模式
 // =====================
-import * as store from '../storage.js?v=20260922a';
-import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260922a';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922a';
+import * as store from '../storage.js?v=20260922b';
+import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260922b';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922b';
 
 export function renderExam(hash) {
   const sub = hash.replace(/^#\/exam\/?/, '');
@@ -29,6 +29,7 @@ function renderConfig(bankId) {
   if (!curBank) { location.hash = '#/exam'; return; }
 
   const total = curBank.questions?.length || 0;
+  const isC3 = curBank.id === 'bank-c3-all';
 
   setView(`
     <div class="card">
@@ -38,6 +39,106 @@ function renderConfig(bankId) {
       </select>
     </div>
 
+    ${isC3 ? renderC3Config(curBank) : renderNormalConfig(total)}
+
+    <button class="btn btn-primary btn-block" id="startBtn">开始考试</button>
+
+    <div class="card mt-3 text-sm text-muted" style="line-height:1.7;">
+      💡 考试模式下不可查看答案,需交卷后统一评分;时间到将自动交卷。
+    </div>
+  `);
+
+  $('#bankSelect').addEventListener('change', (e) => {
+    location.hash = '#/exam/' + e.target.value;
+  });
+
+  // C3 表单联动:实时显示总题数 / 总分
+  if (isC3) {
+    const refresh = () => {
+      const s = parseInt($('#c3Single').value) || 0;
+      const m = parseInt($('#c3Multiple').value) || 0;
+      const j = parseInt($('#c3Judge').value) || 0;
+      const total = s + m + j;
+      const score = s * 1 + m * 2 + j * 1;
+      $('#c3Total').textContent = total;
+      $('#c3Score').textContent = score;
+    };
+    ['#c3Single', '#c3Multiple', '#c3Judge'].forEach(sel => $(sel).addEventListener('input', refresh));
+    refresh();
+  }
+
+  $('#startBtn').addEventListener('click', async () => {
+    let questions, points, duration;
+
+    if (isC3) {
+      const single = parseInt($('#c3Single').value);
+      const multiple = parseInt($('#c3Multiple').value);
+      const judge = parseInt($('#c3Judge').value);
+      duration = parseInt($('#duration').value);
+
+      const singleAvail = curBank.questions.filter(q => q.type === 'single').length;
+      const multipleAvail = curBank.questions.filter(q => q.type === 'multiple').length;
+      const judgeAvail = curBank.questions.filter(q => q.type === 'judge').length;
+
+      if (single < 0 || single > singleAvail) { toast(`单选题 0-${singleAvail}`, 1500); return; }
+      if (multiple < 0 || multiple > multipleAvail) { toast(`多选题 0-${multipleAvail}`, 1500); return; }
+      if (judge < 0 || judge > judgeAvail) { toast(`判断题 0-${judgeAvail}`, 1500); return; }
+      if (single + multiple + judge === 0) { toast('至少需要 1 道题', 1500); return; }
+      if (duration < 1 || duration > 240) { toast('时长需在 1-240 分钟', 1500); return; }
+
+      const pool = {
+        single: curBank.questions.filter(q => q.type === 'single').slice().sort(() => Math.random() - 0.5).slice(0, single),
+        multiple: curBank.questions.filter(q => q.type === 'multiple').slice().sort(() => Math.random() - 0.5).slice(0, multiple),
+        judge: curBank.questions.filter(q => q.type === 'judge').slice().sort(() => Math.random() - 0.5).slice(0, judge)
+      };
+      questions = [...pool.single, ...pool.multiple, ...pool.judge];
+      points = [
+        ...new Array(pool.single.length).fill(1),
+        ...new Array(pool.multiple.length).fill(2),
+        ...new Array(pool.judge.length).fill(1)
+      ];
+    } else {
+      const count = parseInt($('#count').value);
+      duration = parseInt($('#duration').value);
+      const orderMode = $('#orderMode').value;
+
+      if (count < 1 || count > total) { toast(`题目数量需在 1-${total}`, 1500); return; }
+      if (duration < 1 || duration > 240) { toast('时长需在 1-240 分钟', 1500); return; }
+
+      questions = curBank.questions.slice();
+      if (orderMode === 'random') questions.sort(() => Math.random() - 0.5);
+      questions = questions.slice(0, count);
+      points = new Array(questions.length).fill(1);
+    }
+
+    const totalScore = points.reduce((a, b) => a + b, 0);
+    const ok = await confirm({
+      title: '开始考试?',
+      message: `本次考试共 ${questions.length} 题,总分 ${totalScore} 分,时长 ${duration} 分钟,开始后计时不可暂停。`,
+      okText: '开始'
+    });
+    if (!ok) return;
+
+    const sess = {
+      bankId: curBank.id,
+      bankName: curBank.name,
+      questions,
+      points,
+      totalScore,
+      answers: new Array(questions.length).fill(null),
+      results: new Array(questions.length).fill(null),
+      index: 0,
+      duration: duration * 60,
+      startTime: Date.now(),
+      mode: 'exam'
+    };
+    sessionStorage.setItem('exam-session', JSON.stringify(sess));
+    location.hash = '#/exam/' + curBank.id + '/run';
+  });
+}
+
+function renderNormalConfig(total) {
+  return `
     <div class="card">
       <div class="fw-600 mb-2">考试设置</div>
       <div class="form-row">
@@ -56,46 +157,37 @@ function renderConfig(bankId) {
         </select>
       </div>
     </div>
+  `;
+}
 
-    <button class="btn btn-primary btn-block" id="startBtn">开始考试</button>
-
-    <div class="card mt-3 text-sm text-muted" style="line-height:1.7;">
-      💡 考试模式下不可查看答案,需交卷后统一评分;时间到将自动交卷。
+function renderC3Config(curBank) {
+  const singleAvail = curBank.questions.filter(q => q.type === 'single').length;
+  const multipleAvail = curBank.questions.filter(q => q.type === 'multiple').length;
+  const judgeAvail = curBank.questions.filter(q => q.type === 'judge').length;
+  return `
+    <div class="card">
+      <div class="fw-600 mb-2">C3 安全考核 - 考试设置</div>
+      <div class="form-row">
+        <label class="field-label">单选题 · 1 分/题 (${singleAvail} 题可选)</label>
+        <input type="number" id="c3Single" min="0" max="${singleAvail}" value="50" />
+      </div>
+      <div class="form-row">
+        <label class="field-label">多选题 · 2 分/题 (${multipleAvail} 题可选)</label>
+        <input type="number" id="c3Multiple" min="0" max="${multipleAvail}" value="10" />
+      </div>
+      <div class="form-row">
+        <label class="field-label">判断题 · 1 分/题 (${judgeAvail} 题可选)</label>
+        <input type="number" id="c3Judge" min="0" max="${judgeAvail}" value="18" />
+      </div>
+      <div class="form-row">
+        <label class="field-label">考试时长 (分钟)</label>
+        <input type="number" id="duration" min="1" max="240" value="90" />
+      </div>
+      <div class="mt-2 text-sm" style="color:var(--color-primary);">
+        合计 <span id="c3Total" class="fw-700">78</span> 道题 · 总分 <span id="c3Score" class="fw-700">88</span> 分 · 时长 90 分钟
+      </div>
     </div>
-  `);
-
-  $('#bankSelect').addEventListener('change', (e) => {
-    location.hash = '#/exam/' + e.target.value;
-  });
-  $('#startBtn').addEventListener('click', async () => {
-    const count = parseInt($('#count').value);
-    const duration = parseInt($('#duration').value);
-    const orderMode = $('#orderMode').value;
-
-    if (count < 1 || count > total) { toast(`题目数量需在 1-${total}`, 1500); return; }
-    if (duration < 1 || duration > 240) { toast('时长需在 1-240 分钟', 1500); return; }
-
-    const ok = await confirm({ title: '开始考试?', message: `本次考试共 ${count} 题,时长 ${duration} 分钟,开始后计时不可暂停。`, okText: '开始' });
-    if (!ok) return;
-
-    let questions = curBank.questions.slice();
-    if (orderMode === 'random') questions.sort(() => Math.random() - 0.5);
-    questions = questions.slice(0, count);
-
-    const sess = {
-      bankId: curBank.id,
-      bankName: curBank.name,
-      questions,
-      answers: new Array(questions.length).fill(null),
-      results: new Array(questions.length).fill(null),
-      index: 0,
-      duration: duration * 60,
-      startTime: Date.now(),
-      mode: 'exam'
-    };
-    sessionStorage.setItem('exam-session', JSON.stringify(sess));
-    location.hash = '#/exam/' + curBank.id + '/run';
-  });
+  `;
 }
 
 // =====================
@@ -335,9 +427,13 @@ function finishExam(sess) {
   });
 
   const total = sess.questions.length;
-  const correct = sess.results.filter(r => r?.correct).length;
-  const wrong = total - correct;
-  const score = Math.round(correct / total * 100);
+  const wrong = sess.results.filter(r => r && !r.correct).length;
+  const correct = total - wrong;
+  // 加权得分:C3 题库按分值计算,其他题库每题 1 分(等价于简单正确率)
+  const points = sess.points || new Array(total).fill(1);
+  const totalScore = points.reduce((a, b) => a + b, 0);
+  const gotScore = sess.results.reduce((s, r, i) => s + (r?.correct ? points[i] : 0), 0);
+  const score = totalScore > 0 ? Math.round(gotScore / totalScore * 100) : 0;
   const costMs = Date.now() - sess.startTime;
   const costMin = Math.round(costMs / 60000);
 
@@ -346,6 +442,8 @@ function finishExam(sess) {
     bankId: sess.bankId,
     bankName: sess.bankName,
     total, correct, score,
+    totalScore,
+    gotScore,
     duration: costMs,
     questionIds: sess.questions.map(q => q.id),
     answers: sess.answers,
@@ -363,8 +461,9 @@ function finishExam(sess) {
         <div class="stat-cell"><div class="num">${total}</div><div class="label">总题</div></div>
         <div class="stat-cell"><div class="num" style="color:var(--color-success);">${correct}</div><div class="label">答对</div></div>
         <div class="stat-cell"><div class="num" style="color:var(--color-danger);">${wrong}</div><div class="label">答错</div></div>
+        ${points.some(p => p !== 1) ? `<div class="stat-cell"><div class="num" style="color:var(--color-primary);">${gotScore}/${totalScore}</div><div class="label">得分</div></div>` : ''}
       </div>
-      <div class="mt-4 text-lg fw-700" style="color:${score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">得分 ${score}</div>
+      <div class="mt-4 text-lg fw-700" style="color:${score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">得分 ${score}${points.some(p => p !== 1) ? ` (${gotScore}/${totalScore})` : ''}</div>
     </div>
 
     <button class="btn btn-primary btn-block" id="reviewBtn">查看答卷</button>
