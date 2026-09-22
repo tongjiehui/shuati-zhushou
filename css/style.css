@@ -392,6 +392,7 @@ label.field-label {
   white-space: nowrap;
 }
 .q-fav-btn.active { background: #fef9c3; border-color: #fde047; color: #a16207; }
+.q-head-btns { flex: none; display: flex; gap: 6px; }
 .q-card .q-stem { font-size: 16px; line-height: 1.6; margin-bottom: 16px; }
 .q-card .q-tags { margin-top: 8px; }
 
