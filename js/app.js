@@ -2,14 +2,14 @@
 // 主入口 + 路由
 // =====================
 
-import * as store from './storage.js?v=20260909s';
-import { $, setView, setTitle, toast } from './ui.js?v=20260909s';
-import { renderHome } from './pages/home.js?v=20260909s';
-import { renderBank } from './pages/bank.js?v=20260909s';
-import { renderPractice } from './pages/practice.js?v=20260909s';
-import { renderExam } from './pages/exam.js?v=20260909s';
-import { renderStats } from './pages/stats.js?v=20260909s';
-import { renderSettings } from './pages/settings.js?v=20260909s';
+import * as store from './storage.js?v=20260922a';
+import { $, setView, setTitle, toast } from './ui.js?v=20260922a';
+import { renderHome } from './pages/home.js?v=20260922a';
+import { renderBank } from './pages/bank.js?v=20260922a';
+import { renderPractice } from './pages/practice.js?v=20260922a';
+import { renderExam } from './pages/exam.js?v=20260922a';
+import { renderStats } from './pages/stats.js?v=20260922a';
+import { renderSettings } from './pages/settings.js?v=20260922a';
 import { C3_BANKS } from './data/c3-bank.js';
 
 const routes = {
