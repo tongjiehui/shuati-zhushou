@@ -1,9 +1,9 @@
 // =====================
 // 练习模式
 // =====================
-import * as store from '../storage.js?v=20260922a';
-import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260922a';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922a';
+import * as store from '../storage.js?v=20260922b';
+import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260922b';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922b';
 
 export function renderPractice(hash) {
   const sub = hash.replace(/^#\/practice\/?/, '');
@@ -134,11 +134,6 @@ function renderConfig(bankId) {
       <div class="text-sm mt-2" style="color:#065f46;">重做收藏的题目</div>
       <button class="btn btn-block mt-3" id="reviewFavoriteBtn" style="background:#fff;">复习收藏</button>
     </div>
-
-    <div class="row gap-2 mt-3">
-      <button class="btn btn-block" id="goWrongList" style="color:var(--color-danger);">📕 错题列表 (${store.getAll().wrongSet.length})</button>
-      <button class="btn btn-block" id="goFavList" style="color:#b45309;">⭐ 收藏列表 (${store.getAll().favoriteSet.length})</button>
-    </div>
   `);
 
   $('#bankSelect').addEventListener('change', (e) => {
@@ -205,8 +200,6 @@ function renderConfig(bankId) {
   });
   $('#reviewWrongBtn').addEventListener('click', () => location.hash = '#/practice/wrong');
   $('#reviewFavoriteBtn').addEventListener('click', () => location.hash = '#/practice/favorite');
-  $('#goWrongList').addEventListener('click', () => location.hash = '#/stats/wrong');
-  $('#goFavList').addEventListener('click', () => location.hash = '#/stats/favorite');
 
   // 继续/放弃上次练习
   const resumeBtn = $('#resumeBtn');
@@ -242,18 +235,32 @@ function renderRunFavorite() {
 }
 
 function startRunWith(questions, meta) {
-  const sess = {
-    bankId: meta.bankId,
-    bankName: meta.bankName,
-    questions,
-    index: 0,
-    answers: new Array(questions.length).fill(null),
-    results: new Array(questions.length).fill(null),
-    mode: 'practice',
-    startTime: Date.now()
-  };
-  localStorage.setItem('practice-session', JSON.stringify(sess));
-  location.hash = '#/practice/' + meta.bankId + '/run';
+  // 若已存在未完成的同 mode session,不要覆盖（避免来回切换丢进度）
+  let existingSess = null;
+  try {
+    const raw = localStorage.getItem('practice-session');
+    if (raw) existingSess = JSON.parse(raw);
+  } catch (e) { /* ignore */ }
+
+  const isExisting = existingSess?.bankId === meta.bankId
+    && existingSess?.questions?.length === questions.length
+    && (existingSess.results || []).some(r => r === null);
+
+  if (!isExisting) {
+    const sess = {
+      bankId: meta.bankId,
+      bankName: meta.bankName,
+      questions,
+      index: 0,
+      answers: new Array(questions.length).fill(null),
+      results: new Array(questions.length).fill(null),
+      mode: 'practice',
+      startTime: Date.now()
+    };
+    localStorage.setItem('practice-session', JSON.stringify(sess));
+  }
+  // 用 replace 而非 push：浏览器后退跳过中间的 /wrong /favorite 路由，直接回到上一层有意义页面
+  location.replace('#/practice/' + meta.bankId + '/run');
 }
 
 function emptyMsg(ico, t, d, btn) {
@@ -320,6 +327,11 @@ function renderRun(bankId) {
       <button class="btn btn-sm" id="jumpBtn">跳转</button>
       <span class="jump-total">/ 共 ${total} 题</span>
       <button class="btn btn-sm" id="revealBtn" ${sess.results[sess.index] ? 'style="display:none;"' : ''}>👁 查看答案</button>
+    </div>
+
+    <div class="row gap-2 mt-3" style="justify-content:center;">
+      <button class="btn btn-sm" id="goWrongList" style="color:var(--color-danger);">📕 错题列表 (${store.getAll().wrongSet.length})</button>
+      <button class="btn btn-sm" id="goFavList" style="color:#b45309;">⭐ 收藏列表 (${store.getAll().favoriteSet.length})</button>
     </div>
   `);
 
@@ -393,6 +405,12 @@ function renderRun(bankId) {
       toast('已移出错题本', 1200);
     });
   }
+
+  // 底部入口:查看错题/收藏列表
+  const goWrongList = $('#goWrongList');
+  if (goWrongList) goWrongList.addEventListener('click', () => location.hash = '#/stats/wrong');
+  const goFavList = $('#goFavList');
+  if (goFavList) goFavList.addEventListener('click', () => location.hash = '#/stats/favorite');
 
   // 提交
   $('#submitBtn').addEventListener('click', () => {
