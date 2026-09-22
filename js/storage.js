@@ -148,6 +148,18 @@ export function getWrongQuestions() {
   return data.wrongSet.map(w => qMap.get(w.questionId)).filter(Boolean);
 }
 
+export function clearWrongAll() {
+  const data = load();
+  data.wrongSet = [];
+  save();
+}
+
+export function clearFavoriteAll() {
+  const data = load();
+  data.favoriteSet = [];
+  save();
+}
+
 export function getFavoriteQuestions() {
   const data = load();
   const qMap = new Map();
