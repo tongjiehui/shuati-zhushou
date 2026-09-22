@@ -1,9 +1,9 @@
 // =====================
 // 练习模式
 // =====================
-import * as store from '../storage.js?v=20260909s';
-import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260909s';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260909s';
+import * as store from '../storage.js?v=20260922a';
+import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260922a';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922a';
 
 export function renderPractice(hash) {
   const sub = hash.replace(/^#\/practice\/?/, '');
@@ -45,7 +45,29 @@ function renderConfig(bankId) {
   const allTags = [...new Set(curBank.questions.flatMap(q => q.tags || []))];
   const allTypes = [...new Set(curBank.questions.map(q => q.type))];
 
+  // 有未完成的练习 → 显示继续卡片
+  let resumeHtml = '';
+  try {
+    const raw = localStorage.getItem('practice-session');
+    if (raw) {
+      const s = JSON.parse(raw);
+      const answered = (s.results || []).filter(r => r !== null).length;
+      if (s.questions?.length && answered < s.questions.length) {
+        resumeHtml = `
+    <div class="card mb-3" style="background:var(--color-primary-light);border-color:#c7d2fe;">
+      <div class="fw-600" style="color:var(--color-primary);">▶ 继续上次练习</div>
+      <div class="text-sm mt-2" style="color:#3730a3;">${escapeHtml(s.bankName || '')} · 第 ${s.index + 1} / ${s.questions.length} 题 · 已答 ${answered} 题</div>
+      <div class="row gap-2 mt-3">
+        <button class="btn btn-block" id="resumeBtn" style="background:#fff;color:var(--color-primary);">继续练习</button>
+        <button class="btn btn-block" id="discardBtn" style="background:#fff;color:var(--color-danger);">放弃重来</button>
+      </div>
+    </div>`;
+      }
+    }
+  } catch (e) { /* 忽略损坏的会话 */ }
+
   setView(`
+    ${resumeHtml}
     <div class="card">
       <label class="field-label">选择题库</label>
       <select id="bankSelect">
@@ -112,6 +134,11 @@ function renderConfig(bankId) {
       <div class="text-sm mt-2" style="color:#065f46;">重做收藏的题目</div>
       <button class="btn btn-block mt-3" id="reviewFavoriteBtn" style="background:#fff;">复习收藏</button>
     </div>
+
+    <div class="row gap-2 mt-3">
+      <button class="btn btn-block" id="goWrongList" style="color:var(--color-danger);">📕 错题列表 (${store.getAll().wrongSet.length})</button>
+      <button class="btn btn-block" id="goFavList" style="color:#b45309;">⭐ 收藏列表 (${store.getAll().favoriteSet.length})</button>
+    </div>
   `);
 
   $('#bankSelect').addEventListener('change', (e) => {
@@ -164,7 +191,7 @@ function renderConfig(bankId) {
     }
     if (count > 0) questions = questions.slice(0, count);
 
-    sessionStorage.setItem('practice-session', JSON.stringify({
+    localStorage.setItem('practice-session', JSON.stringify({
       bankId: curBank.id,
       bankName: curBank.name,
       questions,
@@ -178,6 +205,22 @@ function renderConfig(bankId) {
   });
   $('#reviewWrongBtn').addEventListener('click', () => location.hash = '#/practice/wrong');
   $('#reviewFavoriteBtn').addEventListener('click', () => location.hash = '#/practice/favorite');
+  $('#goWrongList').addEventListener('click', () => location.hash = '#/stats/wrong');
+  $('#goFavList').addEventListener('click', () => location.hash = '#/stats/favorite');
+
+  // 继续/放弃上次练习
+  const resumeBtn = $('#resumeBtn');
+  if (resumeBtn) {
+    resumeBtn.addEventListener('click', () => {
+      const s = JSON.parse(localStorage.getItem('practice-session'));
+      location.hash = '#/practice/' + s.bankId + '/run';
+    });
+    $('#discardBtn').addEventListener('click', () => {
+      localStorage.removeItem('practice-session');
+      toast('已放弃上次练习', 1200);
+      renderConfig(bankId);
+    });
+  }
 }
 
 function $$(sel) { return [...document.querySelectorAll(sel)]; }
@@ -209,7 +252,7 @@ function startRunWith(questions, meta) {
     mode: 'practice',
     startTime: Date.now()
   };
-  sessionStorage.setItem('practice-session', JSON.stringify(sess));
+  localStorage.setItem('practice-session', JSON.stringify(sess));
   location.hash = '#/practice/' + meta.bankId + '/run';
 }
 
@@ -222,7 +265,7 @@ function emptyMsg(ico, t, d, btn) {
 // =====================
 
 function renderRun(bankId) {
-  const sessRaw = sessionStorage.getItem('practice-session');
+  const sessRaw = localStorage.getItem('practice-session');
   if (!sessRaw) { location.hash = '#/practice/' + (bankId || ''); return; }
   const sess = JSON.parse(sessRaw);
 
@@ -235,20 +278,27 @@ function renderRun(bankId) {
   const q = sess.questions[sess.index];
   const total = sess.questions.length;
   const settings = store.getSettings();
-  const progress = ((sess.index + 1) / total * 100).toFixed(0);
   const origLabel = originalNoLabel(q);
+  // 进度 = 已批改题数 / 总题数;正确率 = 答对 / 已答
+  const answered = sess.results.filter(r => r !== null).length;
+  const correct = sess.results.filter(r => r?.correct).length;
+  const progress = Math.round(answered / total * 100);
+  const accRate = answered > 0 ? Math.round(correct / answered * 100) : 0;
 
   setView(`
     <div class="quiz-bar">
-      <span>${sess.index + 1} / ${total}</span>
+      <span>已答 ${answered}/${total}</span>
       <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
-      <span>${Math.round(sess.results.filter(Boolean).reduce((s, r) => s + (r?.correct ? 1 : 0), 0) / Math.max(1, sess.results.filter(r => r !== null).length) * 100) || 0}%</span>
+      <span>正确率 ${accRate}%</span>
     </div>
 
     <div class="q-card">
       <div class="q-head">
         <div class="q-type">${TYPE_ICONS[q.type]} ${TYPE_LABELS[q.type]}${origLabel ? ' · ' + origLabel : ''}${q.difficulty ? ' · ' + '★'.repeat(q.difficulty) : ''}</div>
-        <button class="q-fav-btn ${store.isFavorite(q.id) ? 'active' : ''}" id="favBtn">${store.isFavorite(q.id) ? '⭐ 已收藏' : '☆ 收藏'}</button>
+        <div class="q-head-btns">
+          ${sess.bankId === 'wrong' ? `<button class="q-fav-btn" id="removeWrongBtn" style="color:var(--color-danger);">🗑 移出错题本</button>` : ''}
+          <button class="q-fav-btn ${store.isFavorite(q.id) ? 'active' : ''}" id="favBtn">${store.isFavorite(q.id) ? '⭐ 已收藏' : '☆ 收藏'}</button>
+        </div>
       </div>
       <div class="q-stem" id="qStem">${escapeHtml(q.stem)}</div>
       <div id="answerArea"></div>
@@ -303,7 +353,7 @@ function renderRun(bankId) {
           if (q.type === 'judge') sess.answers[sess.index] = value === 'true';
           else sess.answers[sess.index] = value;
         }
-        sessionStorage.setItem('practice-session', JSON.stringify(sess));
+        localStorage.setItem('practice-session', JSON.stringify(sess));
       });
     });
   } else {
@@ -311,7 +361,7 @@ function renderRun(bankId) {
     answerArea.querySelectorAll('input.blank-input').forEach(el => {
       el.addEventListener('input', () => {
         sess.answers[sess.index] = collectFillAnswers(answerArea);
-        sessionStorage.setItem('practice-session', JSON.stringify(sess));
+        localStorage.setItem('practice-session', JSON.stringify(sess));
       });
     });
   }
@@ -334,6 +384,16 @@ function renderRun(bankId) {
     });
   }
 
+  // 错题复习模式:移出当前题
+  const removeWrongBtn = $('#removeWrongBtn');
+  if (removeWrongBtn) {
+    removeWrongBtn.addEventListener('click', () => {
+      store.toggleWrong(q.id); // 当前在错题本中,即移除
+      removeWrongBtn.remove();
+      toast('已移出错题本', 1200);
+    });
+  }
+
   // 提交
   $('#submitBtn').addEventListener('click', () => {
     if (sess.results[sess.index]) { goNext(sess); return; } // 已批改,作为下一题(实时读取)
@@ -344,7 +404,7 @@ function renderRun(bankId) {
     const r = checkAnswer(q, ans, { fillCaseSensitive: settings.fillCaseSensitive });
     sess.results[sess.index] = r;
     sess.answers[sess.index] = ans;
-    sessionStorage.setItem('practice-session', JSON.stringify(sess));
+    localStorage.setItem('practice-session', JSON.stringify(sess));
 
     // 答错加入错题本;答对不自动移除(由用户自己标记掌握)
     if (!r.correct && !store.isWrong(q.id)) {
@@ -361,7 +421,7 @@ function renderRun(bankId) {
   $('#prevBtn').addEventListener('click', () => {
     if (sess.index > 0) {
       sess.index--;
-      sessionStorage.setItem('practice-session', JSON.stringify(sess));
+      localStorage.setItem('practice-session', JSON.stringify(sess));
       renderRun(bankId);
     }
   });
@@ -372,7 +432,7 @@ function renderRun(bankId) {
     const n = parseInt(jumpInput.value);
     if (!n || n < 1 || n > total) { toast(`请输入 1 - ${total} 之间的题号`, 1500); return; }
     sess.index = n - 1;
-    sessionStorage.setItem('practice-session', JSON.stringify(sess));
+    localStorage.setItem('practice-session', JSON.stringify(sess));
     renderRun(bankId);
   }
   $('#jumpBtn').addEventListener('click', doJump);
@@ -386,7 +446,7 @@ function renderRun(bankId) {
       const r = { correct: false, revealed: true };
       sess.results[sess.index] = r;
       if (sess.answers[sess.index] === undefined) sess.answers[sess.index] = null;
-      sessionStorage.setItem('practice-session', JSON.stringify(sess));
+      localStorage.setItem('practice-session', JSON.stringify(sess));
 
       if (!store.isWrong(q.id)) store.toggleWrong(q.id);
       store.tickTodayCount(1);
@@ -499,7 +559,7 @@ function showFeedback(q, userAnswer, result) {
 function goNext(sess) {
   if (sess.index < sess.questions.length - 1) {
     sess.index++;
-    sessionStorage.setItem('practice-session', JSON.stringify(sess));
+    localStorage.setItem('practice-session', JSON.stringify(sess));
     renderRun(sess.bankId);
   } else {
     // 完成
@@ -547,7 +607,7 @@ function showSummary(sess) {
     <button class="btn btn-block mt-2" id="backBtn">返回题库</button>
   `);
 
-  sessionStorage.removeItem('practice-session');
+  localStorage.removeItem('practice-session');
 
   const backHash = ['wrong', 'favorite'].includes(sess.bankId) ? '#/practice' : '#/practice/' + sess.bankId;
   $('#reviewWrongBtn').addEventListener('click', () => location.hash = '#/practice/wrong');
