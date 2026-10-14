@@ -632,12 +632,13 @@ label.field-label {
   top: calc(var(--topbar-h) + var(--safe-top));
   background: var(--color-warning-light);
   color: #b45309;
-  padding: 10px 16px;
+  padding: 8px 16px;
   margin: -16px -16px 12px;
   border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 13px;
   font-weight: 600;
   z-index: 10;
 }
@@ -645,8 +646,8 @@ label.field-label {
 
 .answer-sheet {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 6px;
   margin-top: 12px;
 }
 .answer-cell {
@@ -656,7 +657,7 @@ label.field-label {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 11px;
   cursor: pointer;
   background: var(--color-surface);
 }
