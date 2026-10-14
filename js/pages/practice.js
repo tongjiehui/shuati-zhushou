@@ -1,9 +1,9 @@
 // =====================
 // 练习模式
 // =====================
-import * as store from '../storage.js?v=20260922b';
-import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260922b';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922b';
+import * as store from '../storage.js?v=20260922d';
+import { $, setView, escapeHtml, toast, confirm } from '../ui.js?v=20260922d';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922d';
 
 export function renderPractice(hash) {
   const sub = hash.replace(/^#\/practice\/?/, '');
