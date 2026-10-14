@@ -1,9 +1,9 @@
 // =====================
 // 统计 / 错题本 / 历史
 // =====================
-import * as store from '../storage.js?v=20260922c';
-import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260922c';
-import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260922c';
+import * as store from '../storage.js?v=20260922d';
+import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260922d';
+import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260922d';
 
 export function renderStats(hash) {
   const sub = hash.replace(/^#\/stats\/?/, '');
@@ -69,7 +69,9 @@ function renderOverview() {
               <div style="font-size:14px;">${escapeHtml(r.bankName)}</div>
               <div class="text-sm text-muted">${fmtRelative(r.finishedAt)} · ${r.total} 题 · 答对 ${r.correct}</div>
             </div>
-            <div class="fw-700" style="color:${r.score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">${r.score}</div>
+            <div class="fw-700" style="color:${r.score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">
+              ${r.totalScore ? `${r.gotScore ?? 0}/${r.totalScore}分` : `${r.score}%`}
+            </div>
           </div>
         </div>
       `).join('')}
@@ -227,7 +229,7 @@ function renderRecordList() {
               <div style="font-size:14px;">${r.mode === 'exam' ? '📝 考试' : '✏️ 练习'} · ${escapeHtml(r.bankName || '')}</div>
               <div class="text-sm text-muted mt-2">${fmtRelative(r.finishedAt)} · ${r.total} 题 · 答对 ${r.correct} 题</div>
             </div>
-            <div class="fw-700" style="color:${r.score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">${r.score}%</div>
+            <div class="fw-700" style="color:${r.score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">${r.totalScore ? `${r.gotScore ?? 0}/${r.totalScore}分` : `${r.score}%`}</div>
           </div>
         </div>
       `).join('')}
@@ -265,12 +267,13 @@ function renderRecordDetail(rid) {
           <div class="fw-700 text-lg">${rec.mode === 'exam' ? '📝 考试' : '✏️ 练习'}答卷</div>
           <div class="text-sm text-muted">${escapeHtml(rec.bankName || '')} · ${fmtRelative(rec.finishedAt)}</div>
         </div>
-        <div class="fw-700" style="font-size:24px;color:${rec.score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">${rec.score}%</div>
+        <div class="fw-700" style="font-size:24px;color:${rec.score >= 60 ? 'var(--color-success)' : 'var(--color-danger)'};">${rec.totalScore ? `${rec.gotScore ?? 0}/${rec.totalScore}分` : `${rec.score}%`}</div>
       </div>
       <div class="stat-row mt-3">
         <div class="stat-cell"><div class="num">${rec.total}</div><div class="label">总题</div></div>
         <div class="stat-cell"><div class="num" style="color:var(--color-success);">${rec.correct}</div><div class="label">答对</div></div>
         <div class="stat-cell"><div class="num" style="color:var(--color-danger);">${rec.total - rec.correct}</div><div class="label">答错</div></div>
+        ${rec.totalScore ? `<div class="stat-cell"><div class="num" style="color:var(--color-primary);">${rec.score}%</div><div class="label">得分率</div></div>` : ''}
       </div>
     </div>
 
