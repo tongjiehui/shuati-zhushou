@@ -1,9 +1,9 @@
 // =====================
 // 统计 / 错题本 / 历史
 // =====================
-import * as store from '../storage.js?v=20260922b';
-import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260922b';
-import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260922b';
+import * as store from '../storage.js?v=20260922c';
+import { $, setView, escapeHtml, toast, fmtRelative, confirm } from '../ui.js?v=20260922c';
+import { TYPE_LABELS, TYPE_ICONS, formatAnswer, formatUserAnswer, originalNoLabel } from '../questionTypes.js?v=20260922c';
 
 export function renderStats(hash) {
   const sub = hash.replace(/^#\/stats\/?/, '');
@@ -297,6 +297,18 @@ function renderRecordDetail(rid) {
 
 function renderAnsweredQuestion(q, userAns, result, idx) {
   const correct = result?.correct;
+  // 判断用户是否选了某选项(单选/多选)
+  const userPicked = (letter) => {
+    if (userAns === undefined || userAns === null) return false;
+    if (Array.isArray(userAns)) return userAns.includes(letter);
+    return userAns === letter;
+  };
+  // 判断该选项是否是正确答案
+  const isRight = (letter) => {
+    if (Array.isArray(q.answer)) return q.answer.includes(letter);
+    return q.answer === letter;
+  };
+
   return `
     <div class="question-item" style="border-color:${correct ? 'var(--color-success-light)' : 'var(--color-danger-light)'};">
       <div class="q-meta">
@@ -305,9 +317,43 @@ function renderAnsweredQuestion(q, userAns, result, idx) {
         <span>#${idx}${originalNoLabel(q) ? ' · ' + originalNoLabel(q) : ''}</span>
       </div>
       <div class="q-body">${escapeHtml(q.stem)}</div>
-      <div class="mt-2 text-sm">
+
+      ${(q.type === 'single' || q.type === 'multiple') && q.options?.length ? `
+        <div class="option-list mt-2" style="gap:6px;">
+          ${q.options.map((opt, i) => {
+            const letter = String.fromCharCode(65 + i);
+            const picked = userPicked(letter);
+            const right = isRight(letter);
+            let cls = '';
+            if (right) cls += ' correct';
+            if (picked && !right) cls += ' wrong';
+            if (picked && right) cls += ' selected';
+            return `<div class="option${cls}" style="cursor:default;padding:8px 10px;font-size:13px;">
+              <div class="key">${letter}</div><div>${escapeHtml(opt)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      ` : ''}
+
+      ${q.type === 'judge' ? `
+        <div class="option-list mt-2" style="gap:6px;">
+          ${[true, false].map((v) => {
+            const isAns = Boolean(q.answer) === v;
+            const picked = userAns !== undefined && userAns !== null && Boolean(userAns) === v;
+            let cls = '';
+            if (isAns) cls += ' correct';
+            if (picked && !isAns) cls += ' wrong';
+            if (picked && isAns) cls += ' selected';
+            return `<div class="option${cls}" style="cursor:default;padding:8px 10px;font-size:13px;">
+              <div class="key">${v ? '✓' : '✗'}</div><div>${v ? '对' : '错'}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      ` : ''}
+
+      <div class="mt-3 text-sm" style="line-height:1.7;">
         <div>你的答案: <span class="fw-600">${formatUserAnswer(q, userAns)}</span></div>
-        ${!correct ? `<div class="text-sm" style="color:var(--color-danger);">正确答案: ${formatAnswer(q)}</div>` : ''}
+        <div>正确答案: <span class="fw-600">${formatAnswer(q)}</span></div>
         ${q.explanation ? `<div class="text-sm text-muted mt-2">💡 ${escapeHtml(q.explanation)}</div>` : ''}
       </div>
     </div>
