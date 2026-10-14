@@ -1,9 +1,9 @@
 // =====================
 // 模拟考试模式
 // =====================
-import * as store from '../storage.js?v=20260922b';
-import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260922b';
-import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922b';
+import * as store from '../storage.js?v=20260922d';
+import { $, setView, escapeHtml, toast, confirm, fmtTimer } from '../ui.js?v=20260922d';
+import { TYPE_LABELS, TYPE_ICONS, checkAnswer, formatAnswer, formatUserAnswer, renderFillInputs, collectFillAnswers, originalNoLabel } from '../questionTypes.js?v=20260922d';
 
 export function renderExam(hash) {
   const sub = hash.replace(/^#\/exam\/?/, '');
@@ -194,16 +194,22 @@ function renderC3Config(curBank) {
 // 答题
 // =====================
 
+// 模块级唯一计时器:切题/重渲染时先清旧的,杜绝泄漏
+let _examTimer = null;
+
 function renderRun(bankId) {
   const sessRaw = sessionStorage.getItem('exam-session');
   if (!sessRaw) { location.hash = '#/exam/' + (bankId || ''); return; }
   const sess = JSON.parse(sessRaw);
 
+  // 清掉上一次渲染遗留的计时器(只保留一个)
+  if (_examTimer) { clearInterval(_examTimer); _examTimer = null; }
+
   const elapsed = Math.floor((Date.now() - sess.startTime) / 1000);
   const remain = sess.duration - elapsed;
 
   if (remain <= 0) {
-    finishExam(sess);
+    finishExam();
     return;
   }
 
@@ -243,21 +249,20 @@ function renderRun(bankId) {
     <button class="btn btn-danger btn-block mt-2" id="submitBtn">交卷</button>
   `);
 
-  // 启动计时器
-  if (sess._timer) clearInterval(sess._timer);
-  sess._timer = setInterval(() => {
+  // 启动计时器(全局唯一)
+  _examTimer = setInterval(() => {
     const e = Math.floor((Date.now() - sess.startTime) / 1000);
     const r = sess.duration - e;
     if (r <= 0) {
-      clearInterval(sess._timer);
-      finishExam(sess);
+      clearInterval(_examTimer);
+      _examTimer = null;
+      finishExam();
       return;
     }
     const timerEl = $('.exam-timer span:first-child');
     if (timerEl) {
       timerEl.textContent = '⏱ 剩余 ' + fmtTimer(r);
       const bar = $('.exam-timer');
-      if (r < 60 && !bar) bar?.classList.add('warn');
       if (bar) bar.classList.toggle('warn', r < 60);
     }
   }, 1000);
@@ -327,13 +332,14 @@ function renderRun(bankId) {
     if (sess.index < total - 1) { sess.index++; saveSession(sess); renderRun(bankId); }
   });
   $('#submitBtn').addEventListener('click', async () => {
-    const answered = sess.answers.filter(a => !isEmptyVal(sess.questions[0], a)).length;
+    // 逐题对应判断是否已答(不能用第一题的类型判断所有题)
+    const answered = sess.answers.filter((a, i) => !isEmptyVal(sess.questions[i], a)).length;
     const unanswered = total - answered;
     let msg = `确认交卷?本次考试共 ${total} 题,已答 ${answered} 题。`;
     if (unanswered > 0) msg += `\n还有 ${unanswered} 题未作答!`;
     const ok = await confirm({ title: '交卷', message: msg.replace(/\n/g, '<br>'), okText: '交卷', danger: unanswered > 0 });
     if (!ok) return;
-    finishExam(sess);
+    finishExam();
   });
 }
 
@@ -415,8 +421,16 @@ function highlightCurrent(q, ans) {
 // 收卷
 // =====================
 
-function finishExam(sess) {
-  if (sess._timer) clearInterval(sess._timer);
+function finishExam() {
+  // 防重复:session 已被消费(交过卷)则直接返回
+  const sessRaw = sessionStorage.getItem('exam-session');
+  if (!sessRaw) return;
+
+  // 停掉全局计时器
+  if (_examTimer) { clearInterval(_examTimer); _examTimer = null; }
+
+  // 用最新的 session 数据判分,不依赖任何闭包里的旧对象
+  const sess = JSON.parse(sessRaw);
   const settings = store.getSettings();
 
   sess.questions.forEach((q, i) => {
